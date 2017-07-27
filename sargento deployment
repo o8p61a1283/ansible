@@ -1,0 +1,40 @@
+- hosts: sargneto-us-east-prod-delivery
+  gather_facts: True
+
+ tasks:
+    - name: get PID
+      shell: ps -ef | grep java | grep delivery | grep -v grep | head -1 | awk '{print $2}'
+      register: pid
+    - debug: var=pid.stdout
+    - name: thread dump
+      command: sudo kill -3 "{{ pid.stdout }}"
+
+    - name: stop liferay-service
+      service:
+        name: liferay-serivice
+        state: stopped
+        sleep: 120
+
+  - name: delete files
+    file:
+    path: /mnt/liferay/liferay-dxp-ee-GA1/tomcat-8.0.32/temp/*
+    state: absent
+ - name: delete files
+    file:
+    path: /mnt/liferay/liferay-dxp-ee-GA1/tomcat-8.0.32/work/*
+    state: absent
+ - name: delete files
+    file:
+    path: /mnt/liferay/liferay-dxp-ee-GA1/osgi/state/*
+    state: absent
+
+ - name: delete files
+    file:
+    path: /mnt/liferay/liferay-dxp-ee-GA1/work/*
+    state: absent
+
+  - name: start liferay-service
+      service:
+        name: liferay-service
+        state: started
+        sleep: 60
