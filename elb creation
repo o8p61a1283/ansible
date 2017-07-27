@@ -1,0 +1,20 @@
+---
+ - name: A simple Load Balane
+   hosts: local
+   gather_facts: False
+
+   tasks:
+    - name: setup a simple load balancer
+      ec2_elb_lb:
+        profile: myaccount
+        name: testelb
+        state: present
+        region: ap-south-1
+        zones:
+          - ap-south-1a
+          - ap-south-1b
+        listeners:
+          - protocol: http
+            load_balancer_port: 80
+            instance_port: 80
+      register: testelb
