@@ -1,0 +1,134 @@
+---
+  - name: EC2_ELB
+    hosts: TELX
+    gather_facts: False
+
+    tasks:
+      - name: Removing node1 from  ELB
+        ec2_elb:
+          ec2_elbs: telxProdLB,telxRivetLB,MarketplacePortal-Prod-ELB,MP-Portal-Prod-ELB  
+          instance_id: i-a9ce6634
+          state: absent
+          profile: telx-ms-east
+          region: us-east-1b
+
+      - name: stop liferay-service
+        service:
+          name: liferay-serivice
+          state: stopped
+          sleep: 120
+   
+      - name: Creates directory
+        file:
+          path: /opt/liferay/backup/2017_07_27
+          state: directory
+          owner: root
+          group: root
+          mode: 0775
+
+     - name: liferay home direcory
+       command: chdir=/mnt/liferay/tomcat
+    
+     -name:copy portal-environment.properties
+      - copy:
+        src:/mnt/liferay/tomcat/portal-environment.properties 
+        dest:/opt/liferay/backup/2017_07_27
+    
+      -name:copy portal-environment.properties
+       - copy:
+         src:/mnt/liferay/tomcat//bin/setenv.sh 
+         dest:/opt/liferay/backup/2017_07_27
+      
+     -name:copy portal-environment.properties
+       - copy:
+         src:/mnt/liferay/tomcat//bin/conf/server.xml
+         dest:/opt/liferay/backup/2017_07_27
+
+     -name:copy portal-environment.properties
+       - copy:
+         src:/mnt/liferay/tomcat/conf/Catalina/localhost/ROOT.xml
+         dest:/opt/liferay/backup/2017_07_27
+
+    -name:copy portal-environment.properties
+       - copy:
+         src:/mnt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/custom-ehcache
+         dest:/opt/liferay/backup/2017_07_27
+    
+    - name: list the files
+      command: chdir=/opt/liferay/backup/2017_07_27 ls
+
+    -name: remove the files
+      file:
+      path: /mnt/liferay/tomcat/work/*
+      state: absent
+ 
+    -name: remove the files
+      file:
+      path: /mnt/liferay/tomcat/temp/*
+      state: absent
+
+    -name: remove the files
+      file:
+      path: /mnt/liferay/tomcat/lib/ext/*
+      state: absent
+
+    -name: remove the files
+      file:
+      path: /mnt/liferaytomcat/webapps/*
+      state: absent
+
+    - name: list the files
+      command: chdir=/opt/liferay
+     
+    -name: Extract file
+     win_unzip:
+       src: /opt/liferay/liferay-telx-bundle-appX.zip
+       dst: /opt/liferay/
+
+    - name: list the files
+      command: chdir=/mnt/liferay/tomcat
+  
+    -name:copy portal-environment.properties
+       - copy:
+         src:/opt/liferay/backup/2017_06_29/portal-environment.properties
+         dest:/mnt/liferay/tomcat/
+
+    -name:copy portal-environment.properties
+       - copy:
+         src:/opt/liferay/backup/2017_06_29/setenv.sh
+         dest:/mnt/liferay/tomcat/bin/
+
+    -name:copy portal-environment.properties
+       - copy:
+         src:/opt/liferay/backup/2017_06_29/server.xml
+         dest:/mnt/liferay/tomcat/conf/
+
+    -name:copy portal-environment.properties
+       - copy:
+         src:/opt/liferay/backup/2017_06_29/ROOT.xml
+         dest:/mnt/liferay/tomcat/conf/Catalina/localhost/
+
+    -name:copy portal-environment.properties
+       - copy:
+         src:/opt/liferay/backup/2017_06_29/custom-ehcache/*
+         dest:/mnt/liferay/tomcat/webapps/ROOT/WEB-INF/classes/*
+
+    - name: changing directory
+      shell: ./patching-tool.sh
+      args:
+         chdir=/mnt/liferay/tomcat/patching-tool/
+
+      - name: start liferay-service
+        service:
+          name: liferay-serivice
+          state: started
+          sleep: 120
+
+    
+     - name: Adding node1 from  ELB
+       ec2_elb:
+        ec2_elbs: telxProdLB,telxRivetLB,MarketplacePortal-Prod-ELB,MP-Portal-Prod-ELB
+         instance_id: i-a9ce6634
+         state: present
+         profile: telx-ms-east
+         region: us-east-1b
