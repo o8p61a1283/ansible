@@ -1,0 +1,13 @@
+---
+  - name: EC2_ELB
+    hosts: local
+    gather_facts: False
+
+    tasks:
+      - name: Removing Webserver to ELB
+        ec2_elb:
+          ec2_elbs: testelb
+          instance_id: i-0314925c1dd76a435
+          state: absent
+          profile: myaccount
+          region: ap-south-1
