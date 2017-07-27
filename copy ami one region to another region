@@ -1,0 +1,12 @@
+---
+  - name: AMI_COPY
+    hosts: local
+    gather_facts: False
+
+    tasks:
+      - ec2_ami_copy:
+          profile: myaccount
+          source_region: ap-south-1
+          region: eu-west-2
+          source_image_id: ami-d7473fb8
+          encrypted: no
