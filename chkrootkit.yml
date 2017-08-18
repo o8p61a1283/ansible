@@ -1,0 +1,39 @@
+---
+- name: Installtion of Chrootkit
+  hosts: testing
+  gather_facts: False
+  become: true
+  tasks:
+
+    - name:  Download chrootkit
+      get_url: url="ftp://ftp.pangeia.com.br/pub/seg/pac/chkrootkit.tar.gz"  dest="/opt/chkrootkit.tar.gz"
+
+    - name:  Download chrootkit
+      get_url:
+        url: ftp://ftp.pangeia.com.br/pub/seg/pac/chkrootkit.md5  
+        dest: /opt/chkrootkit.md5
+
+    - name:  check the md5sum
+      command: /usr/bin/md5sum -c /opt/chkrootkit.md5 
+
+
+    - name: chrootkit
+      command: /bin/tar xvf /opt/chkrootkit.tar.gz -C /usr/local/ creates=/usr/local/chkrootkit-0.52/
+
+    - name: make sense
+      shell: make sense
+      args:
+        chdir: /usr/local/chkrootkit-0.52/
+
+    - name: create symbolic link
+      file: src=/usr/local/chkrootkit-0.52/chkrootkit dest=/usr/local/bin/chkrootkit state=link owner=root group=root mode=0644 force=yes
+
+    - name: insert the data
+      blockinfile:
+        path: /usr/local/chkrootkit-0.52/chkrootkit
+        insertafter: "unalias dirname > /dev/null 2>&1"
+        content: |
+                 cd $(dirname $0)
+
+    - name:  chkrootkit
+      command: chkrootkit
