@@ -1,0 +1,29 @@
+---
+- name: Create a new Demo EC2 instance
+  hosts: local
+  gather_facts: False
+
+  vars:
+   region: ap-south-1
+   instance_type: t2.micro
+   ami: ami-0f0f4a60 # Ubuntu 16.04 LTS 
+   keypair: mac-test # pem file name
+
+  tasks:
+   - name: Create an ec2 instance
+     ec2:
+      key_name: "{{ keypair }}"
+      group_id: sg-af9f6cc7
+      instance_type: "{{ instance_type}}"
+      image: "{{ ami }}"
+      wait: true
+      region: "{{ region }}"
+      profile: myaccount
+      count: 1
+      count_tag:
+       Name: ansible
+      instance_tags:
+       Name: mytest
+      vpc_subnet_id: subnet-bc1388d5
+      assign_public_ip: yes
+     register: ec2
