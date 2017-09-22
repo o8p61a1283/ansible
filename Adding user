@@ -1,0 +1,25 @@
+---
+- name: Adding a user
+  hosts: testing
+  gather_facts: True
+  become: true
+
+  vars:
+   username:  "{{ USER }}"
+
+  tasks:
+  - user:
+      name: "{{ username }}"
+      shell: /bin/bash
+      groups: sudo
+      append: yes
+      
+      
+      ansible-playbook -i hosts adduser.yml --extra-vars='{"USER":"anil"}'
+      
+      
+      hosts:
+      [testing]
+      testing  ansible_ssh_port=22 ansible_ssh_user=santhosh ansible_ssh_host=192.168.2.43 ansible_sudo_pass=password
+      
+      
