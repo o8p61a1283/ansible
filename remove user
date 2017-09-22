@@ -1,0 +1,16 @@
+---
+- name: Removing a user
+  hosts: "{{ HOST }}"
+  gather_facts: True
+  become: true
+
+  vars:
+   username:  "{{ user }}"
+
+  tasks:
+  - user:
+      name: "{{ username }}"
+      state: absent
+      remove: yes 
+
+$ansible-playbook -i hosts user.yml --extra-vars='{"HOST":"testing","USER":"anil"}'
