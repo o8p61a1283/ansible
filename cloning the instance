@@ -1,0 +1,82 @@
+##### ======================================================================================================= #####
+##title          :ec2-clone-instance.yml
+#description     :This ansible playbook will take ami backup and launch a standby
+#author          :
+#date            :20180117
+#usage           :ansible-playbook -i ~/hosts -vvvv -e "PROFILE=awscron-marriott-west INSTANCE_NAME=marriott-us-west-2a-dr-mongodb-01 REGION=us-west-2" ec2-clone-instance.yml
+#notes           :Instance will have a DNS IP. Make sure assign an EIP after its launched.
+#ansible_version :2.4+
+#boto version    :boto3 
+##### ======================================================================================================= #####
+---
+-  name: Take ami backup and launch standby instance.
+   hosts: local
+   vars:
+     Profile: "{{ PROFILE}}"
+     Instance_name: "{{INSTANCE_NAME}}"
+     Region: "{{REGION}}"
+
+   tasks:
+     - name: Get ec2 information
+       ec2_instance_facts:
+         profile: "{{Profile}}"
+         region: "{{Region}}"
+         filters:
+           "tag:Name": "{{Instance_name}}"
+           instance-state-name: running
+       register: ec2_details
+       tags: always
+
+#     - name: Setting Variable
+#       set_fact:
+#         SECURITY_GROUP_ID: "{{ ec2_details.instances[0].security_groups|map(attribute='group_id')|list }}"
+
+     - name: Set instance id
+       set_fact:
+         Instance_id: "{{ec2_details.instances[0].instance_id}}"
+
+     - name: SG string v1
+       set_fact:
+         SG_String_v1: "{{ ec2_details.instances[0].security_groups|map(attribute='group_id') | join(',') }}"
+
+     - name: Take ami backup of instance "{{INSTANCE_NAME}}"
+       ec2_ami:
+         profile: "{{Profile}}"
+         region: "{{Region}}"
+         instance_id: "{{ec2_details.instances[0].instance_id}}"
+         wait: yes
+         image_id: yes
+         name: "{{Instance_name}}"
+         state: present
+         no_reboot: yes
+         tags:
+           Name: "{{Instance_name}}"
+       register: ec2_ami_details
+       tags: [create_snaphost]
+
+    # - name: debug
+       #debug:
+         #msg: "Instance ec2_details are: {{ec2_details.instances[0].instance_id}}"
+         #msg: "Instance SG are: {{SECURITY_GROUP_ID}}"
+         #msg: "Instance SG are: {{SG_String_v1}}"
+         #msg: "Instance Subnet is: {{ec2_details.instances[0].subnet_id}}"
+         #msg: "Instance type is: {{ec2_details.instances[0].instance_type}}"
+         #msg: "Instance key name is: {{ec2_details.instances[0].key_name}}"
+
+         #msg: "AMI created is: {{ec2_ami_details[0].image_id}}"
+
+     - name: Launching standby for "{{INSTANCE_NAME}}" as "{{INSTANCE_NAME}}-standby"
+       ec2:
+         key_name: "{{ec2_details.instances[0].key_name}}"
+         group_id: "{{SG_String_v1}}"
+         instance_type: "{{ec2_details.instances[0].instance_type}}"
+         image: "{{ec2_ami_details.image_id}}"
+         wait: yes
+         region: "{{Region}}"
+         profile: "{{Profile}}"
+         count: 1
+         instance_tags:
+           Name: "{{INSTANCE_NAME}}-standby"
+         vpc_subnet_id: "{{ec2_details.instances[0].subnet_id}}"
+         assign_public_ip: yes
+       register: new_instance
