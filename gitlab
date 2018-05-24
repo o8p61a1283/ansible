@@ -1,0 +1,30 @@
+---
+- hosts: gitlab
+  become: yes
+  gather_facts: no
+
+  tasks:
+  tasks:
+  - name: ensure apt cache is up to date
+    apt: update_cache=yes
+
+  - name: (GITLAB-CE) Check if GitLab-CE is already installed
+    stat:
+      path: /etc/gitlab
+    register: gitlab
+
+  - name: (GITLAB-CE) Download GitLab-CE Deb script
+    get_url:
+      url: https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh 
+      dest: /opt/script.deb.sh
+    when: not gitlab.stat.exists
+
+  - name: (GITLAB-CE) Execute GitLab-CE Deb script
+    command: /bin/bash /opt/script.deb.sh
+    when: not gitlab.stat.exists
+
+  - name: (GITLAB-CE) Install GitLab Community Edition 
+    apt: name=gitlab-ce=10.5.4-ce.0  state=present 
+
+  - name: (GITLAB-CE) Configure GitLab Community Edition
+    command: gitlab-ctl reconfigure
