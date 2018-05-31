@@ -1,0 +1,23 @@
+---
+- hosts: postgres
+  gather_facts: no
+  become: yes
+
+  tasks:
+
+    - name: Download eclipse
+      get_url: url=http://ftp.fau.de/eclipse/technology/epp/downloads/release/oxygen/2/eclipse-jee-oxygen-2-linux-gtk-x86_64.tar.gz dest=/opt/eclipse-jee-oxygen-2-linux-gtk-x86_64.tar.gz
+
+    - name: Extract Eclipse archive
+      command: tar zxvf /opt/eclipse-jee-oxygen-2-linux-gtk-x86_64.tar.gz -C /opt/ creates=/opt/eclipse
+
+    - name: cretae link file
+      file: src=/opt/eclipse/eclipse dest=/usr/local/sbin/eclipse state=link
+
+    - name: cretae a desktop icon
+      file: path=/usr/share/applications/eclipse-oxygen.desktop state=touch
+
+    - name: cretae a desktop icon
+      blockinfile: 
+        path: /usr/share/applications/eclipse-oxygen.desktop
+        content: " [Desktop Entry] Name=Eclipse  Comment=EclipseOxygenIDE Type=Application  Encoding=UTF-8 Exec=/usr/local/sbin/eclipse Icon=/opt/eclipse/icon.xpm Categories=GNOME;Application;Development; Terminal=false StartupNotify=true "
