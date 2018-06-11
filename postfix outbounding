@@ -1,0 +1,250 @@
+---
+##### ======================================================================================================= #####
+##title          :postfix.yml
+#description     :This ansible playbook will redirect the outbound emails to a file and also re-enable outbound emails based on the provided tags
+#author          :
+#date            :20180412
+#usage           :ansible-playbook -i ~/hosts postfix.yml -e "HostName=dropbox-us-west-2c-qa-delivery-01" --tags=disable_outbound/enable_outbound --ask-sudo-pass
+#notes           :TAG-> disable_outbound: will take backup of postfix and redirect outbound mails to a file "/tmp/outbound-email-during-zapscan.log"
+#notes           :TAG-> enable_outbound: reconfigure postfix to previous state by copying main.cf file from backup to postfix config directory.
+#ansible_version :2.5+
+#boto version    :boto3
+##### ======================================================================================================= #####
+
+ - name: Postfix Redirect rule to avoid sending mails out.
+   hosts: "{{HostName}}"
+   gather_facts: true
+   become_user: root
+   become: true
+
+   vars_prompt:
+       
+     - name: "BackupDirectory"
+       prompt: "Provide Directory path where backup need to be stored"
+       private: no
+       
+     - name: "Backup_Over_Ride"
+       prompt: "If backup file exists do you want override it [y/n]"
+       default: n
+       private: no
+
+   vars:
+     PostfixVirtualDirectory: "{{ BackupDirectory }}/postfix"
+     PostfixVirtualFile: virtual-zap
+     RedirectLocalUser: "/.*/ zapscan-user@localhost"
+     PostfixLocalAliasFile: aliases-zap
+     RedirectionRule: "zapscan-user: /tmp/outbound-email-during-zapscan.log"
+     Date: "{{ ansible_date_time.iso8601_basic_short}}"
+     Mail_ID:
+      - pavan.bhagavathula@abhrainc.com
+      - pavan.bhagavathula@abhrainc.com
+
+   tasks:
+   
+   - fail:
+      msg: 'Provide either disable_outbound or enable_outbound tag in cli'
+
+   - name: "Sending mail Before Disabling Postfix"
+     mail:
+       to: "{{Mail_ID}}"
+       subject: "Disabling Postfix outbound mails on {{ansible_hostname}}"
+       body: "Hello, Redirecting Postfix outbound mails to a file on {{ansible_hostname}}. We will re-enable it after completion of zap scan."
+     tags: disable_outbound
+
+   - name: Checking Existence of Virtual File
+     stat:
+       path: "{{PostfixVirtualDirectory}}/{{ PostfixVirtualFile }}"
+     register: file_status
+     tags: disable_outbound, enable_outbound
+
+   - name: Creating destination Directory
+     file:
+       path: "{{ PostfixVirtualDirectory }}"
+       state: directory
+     register: directory_status
+     when: file_status.stat.exists == false
+     tags: disable_outbound
+
+   - name: Creating Virtual alias File
+     file:
+       path: "{{PostfixVirtualDirectory}}/{{ PostfixVirtualFile }}"
+       state: touch
+     register: created_file
+     when: file_status.stat.exists == false and directory_status is succeeded
+     tags: disable_outbound
+
+   - name: Updating Virtual alias file
+     copy:
+      content: "{{ RedirectLocalUser }}"
+      dest: "{{PostfixVirtualDirectory}}/{{ PostfixVirtualFile }}"
+     when: file_status.stat.exists == false 
+     tags: disable_outbound
+
+   - name: Checking local virtual alias file
+     stat:
+       path: "{{PostfixVirtualDirectory}}/{{ PostfixLocalAliasFile }}"
+     register: local_alias_file_status
+     tags: disable_outbound
+
+   - name: Creating Local Alias file
+     file:
+       path: "{{PostfixVirtualDirectory}}/{{ PostfixLocalAliasFile }}"
+       state: touch
+     register: local_alias_file
+     when: local_alias_file_status.stat.exists == false
+     tags: disable_outbound
+
+   - name: Checking postfix main.cf backup file
+     stat:
+       path: "{{BackupDirectory}}/main.cf"
+     register: backup_main_file
+     tags: disable_outbound, enable_outbound
+
+   - name: Aborting As backup file is available
+     fail:
+      msg: '{{{{BackupDirectory}}/main.cf}} file exists. Please rename it or re-execute playbook and provide answer \"y\" when prompted for override'
+     when: '{{backup_main_file.stat.exists}} == true and {{Backup_Over_Ride}} == n|N'
+
+   - name: Taking backup of main configuration
+     copy:
+       src: /etc/postfix/main.cf
+       dest: "{{BackupDirectory}}/main.cf"
+       remote_src: yes
+     register: file_backup
+     when: backup_main_file.stat.exists == false
+     tags: disable_outbound
+
+   - name: Taking Postfix Backup
+     archive:
+       path: /etc/postfix
+       dest: "{{BackupDirectory}}/postfix-{{Date}}.tar.gz"
+     register: postfix_backup
+     when: backup_main_file.stat.exists == false
+     tags: disable_outbound
+
+   - name: creating new local aliases DB
+     shell: /usr/sbin/postalias "{{PostfixVirtualDirectory}}/{{ PostfixLocalAliasFile }}"
+     when: local_alias_file_status.stat.exists == false
+     tags: disable_outbound
+
+   - name: Writing local redirection rule
+     copy:
+       content: "{{ RedirectionRule }}"
+       dest: "{{PostfixVirtualDirectory}}/{{ PostfixLocalAliasFile }}"
+     when: local_alias_file_status.stat.exists == false and local_alias_file is succeeded
+     tags: disable_outbound
+    
+     
+
+   - name: Applying Gobal Redirect rules
+     shell: /usr/sbin/postconf -epv "virtual_alias_maps=regexp:{{ PostfixVirtualDirectory}}/{{ PostfixVirtualFile }}"
+     register: global_redirect_rule
+     when: postfix_backup is succeeded
+     tags: disable_outbound
+
+   - debug:
+       msg: Redirect  rule is succeeded
+     when: global_redirect_rule is succeeded
+     tags: disable_outbound
+
+   - name: Applying local redirect rule
+     shell: /usr/sbin/postconf -epv "alias_maps=hash:{{ PostfixVirtualDirectory}}/{{PostfixLocalAliasFile}}"
+     register: local_redirect_rule
+     when: postfix_backup is succeeded
+     tags: disable_outbound
+
+   - debug:
+       msg: Local redirect rule is succeeded
+     when: local_redirect_rule is succeeded
+     tags: disable_outbound
+
+   - name: Applying local DB rule
+     shell: /usr/sbin/postconf -epv "alias_database=hash:{{ PostfixVirtualDirectory}}/{{PostfixLocalAliasFile}}"
+     register: local_db_redirect_rule
+     when: postfix_backup is succeeded
+     tags: disable_outbound
+
+   - debug:
+      msg: Successfully redirected DB
+     when: local_db_redirect_rule is succeeded
+     tags: disable_outbound
+
+   - name: Reloading the Main.cf file with before scan parameters
+     copy:
+      src: "{{BackupDirectory}}/main.cf"
+      dest: /etc/postfix/main.cf
+      remote_src: yes
+     when: file_status.stat.exists == true and backup_main_file.stat.exists == true
+     tags: enable_outbound
+
+   - name: Aborting Because of non availability of backup file
+     fail:
+       msg: 'Backup file is not available. Revet changes manually from tar file'
+     when: backup_main_file.stat.exists == false
+     tags: enable_outbound
+     
+   - name: Pausing Because of non availability of previously created virtual file
+     pause:
+        prompt: '{{ PostfixVirtualDirectory}}/{{ PostfixVirtualFile }} is not available looks like something abnormal. '
+        minutes: 5
+     when: file_status.stat.exists == false   
+     tags: enable_outbound
+     
+   - name: Reloading the Main.cf file with before scan parameters
+     copy:
+      src: "{{BackupDirectory}}/main.cf"
+      dest: /etc/postfix/main.cf
+      remote_src: yes
+     tags: enable_outbound
+
+   - name: Removing the ZAP SCAN alias files
+     file:
+      path: "{{ PostfixVirtualDirectory }}"
+      state: absent
+     tags: enable_outbound
+     
+   - name: Checking outbound file
+     stat:
+       path: /tmp/outbound-email-during-zapscan.log
+     register: outbound_mail_file
+     tags: enable_outbound
+     
+   - name: Taking backup of mails
+     command: "mv /tmp/outbound-email-during-zapscan.log {{BackupDirectory}}/outbound-email-during-zapscan-{{Date}}.log"
+     when: outbound_mail_file.stat.exists == true
+     tags: enable_outbound
+     
+   - name: Taking backup of main.cf file
+     command: "mv {{BackupDirectory}}/main.cf {{BackupDirectory}}/main.cf-{{Date}}"
+     when: backup_main_file.stat.exists == true
+     tags: enable_outbound
+     
+   - name: Updating Database
+     shell: /usr/bin/newaliases
+     tags: disable_outbound, enable_outbound
+     
+   - name: Reloading postfix to make changes effective
+     shell: /usr/sbin/postfix reload
+     register: reload_postfix
+     tags: disable_outbound, enable_outbound
+
+   - debug:
+       msg: Successfully reloaded postfix
+     when: reload_postfix is succeeded
+     tags: disable_outbound, enable_outbound
+
+   - name: "Sending mail After Enabling Postfix"
+     mail:
+       to: "{{Mail_ID}}"
+       subject: "Enabled Postfix outbound mails on {{ansible_hostname}}"
+       body: "Hello, Re-enabled postfix outbound mails on {{ansible_hostname}} host and this mail confirms it."
+       attach: "{{BackupDirectory}}/outbound-email-during-zapscan-{{Date}}.log"
+     when: outbound_mail_file.stat.exists == true
+     tags: enable_outbound
+
+   - name: "Sending mail After Enabling Postfix"
+     mail:
+       to: "{{Mail_ID}}"
+       subject: "Enabled Postfix outbound mails on {{ansible_hostname}}"
+       body: "Hello, Re-enabled postfix outbound mails on {{ansible_hostname}} host and this mail confirms it."
+     tags: enable_outbound
