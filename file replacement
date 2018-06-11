@@ -1,0 +1,31 @@
+---
+- hosts: localhost
+  become: yes
+  gather_facts: yes
+ 
+  tasks:
+  - replace: 
+      path: /etc/nginx/sites-available/default
+      regexp: '(\s+)anilkondamalla.com(\s+.*)?$'
+      replace: '\1www.santhosh.com\2'
+      backup: yes
+
+
+   - lineinfile:
+       path: /etc/hosts
+       regexp: '^192\.168\.0\.154'
+       line: '192.168.0.175 www.santhoshkondamalla.com'
+       owner: root
+       group: root
+       mode: 0644
+       backup: yes
+
+   - replace:
+           dest: /etc/ssh/sshd_config
+           regexp: '202.51.1.1'
+           replace: '203.55.5.5'
+           backup: yes
+           validate: '/usr/sbin/sshd -t'
+   - service:
+           name: sshd
+           state: reloaded
