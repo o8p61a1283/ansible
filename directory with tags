@@ -1,0 +1,43 @@
+---
+##### ======================================================================================================= #####
+##title          :directory.yml
+#description     :This ansible playbook describe create a directory and remove a directory
+#author          :santhosh konfdamalla
+#date            :20180612
+#usage           :ansible-playbook -i hosts directory.yml  --tags=disable_outbound/enable_outbound --ask-sudo-pass
+#notes           :TAG-> create: it will create a directory,if the directory does not exits
+#notes           :TAG-> delete: it will delete a directory,if the directory exists
+#ansible_version :2.5+
+##### ======================================================================================================= #####
+- hosts: localhost
+  become: yes
+  gather_facts: no
+ 
+  vars_prompt:
+  
+    - name: "directory"
+      prompt: "Enter the directory name"
+      private: no
+
+  tasks:
+    - name: checking existence directory
+      stat:
+        path: /var/backups/{{ directory }}
+      register: file_status
+      tags: create,delete
+      
+    - name: creating directory
+      file: 
+        path: /var/backups/{{ directory }}
+        state: directory
+      register: directory_status
+      when: file_status.stat.exists == false
+      tags: create
+  
+    - name: deleting directory
+      file: 
+       path: /var/backups/{{ directory }}
+       state: absent
+      register: directory_status
+      when: file_status.stat.exists != false
+      tags: delete
