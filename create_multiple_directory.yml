@@ -1,0 +1,25 @@
+---
+##### ======================================================================================================= #####
+##title          :create_multiple_diretory.yml
+#description     :This ansible playbook describe create a directory and remove a directory
+#author          :santhosh konfdamalla
+#date            :20180612
+#usage           :ansible-playbook -i hosts create_multiple_directory  --tags=create/delete --ask-sudo-pass
+#notes           :TAG-> create: it will create a directory,if the directory does not exits
+#notes           :TAG-> delete: it will delete a directory,if the directory exists
+#ansible_version :2.5+
+##### ======================================================================================================= #####
+
+- name: create multiple directories with multiple permissions (mode)
+  hosts: localhost
+  gather_facts: no
+  become: yes
+  tasks:
+  - name: ansible craete multiple directories with multiple set of modes
+    file:
+      path: "{{ item.dest }}"
+      mode: "{{ item.mode }}"
+      state: directory
+    with_items:
+      - { dest: '/var/backups/abhrapavan2', mode: '0775'}
+      - { dest: '/var/backups/abhrapavan3', mode: '0777'}
