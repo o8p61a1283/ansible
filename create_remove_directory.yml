@@ -1,0 +1,34 @@
+---
+##### ======================================================================================================= #####
+##title          :create_remove_diretory.yml
+#description     :This ansible playbook describe create a directory and remove a directory
+#author          :santhosh konfdamalla
+#date            :20180612
+#usage           :ansible-playbook -i hosts create_remove_directory  --tags=create/delete --ask-sudo-pass
+#notes           :TAG-> create: it will create a directory,if the directory does not exits
+#notes           :TAG-> delete: it will delete a directory,if the directory exists
+#ansible_version :2.5+
+##### ======================================================================================================= #####
+
+- name: create multiple directories at a time
+  hosts: localhost
+  become: yes
+  gather_facts: no
+  tasks:
+  - name: ansible create multiple directory examples
+    file:
+      path: "{{ item }}"
+      state: directory
+    with_items:
+      - '/var/backups/abhra78'
+      - '/var/backups/abhra87'
+    tags: create
+
+  - name: remove multiple directories
+    file:
+      path: "{{ item }}"
+      state: absent
+    with_items:
+      - '/var/backups/abhra3'
+      - '/var/backups/abhra4'
+    tags: delete
