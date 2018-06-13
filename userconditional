@@ -1,0 +1,51 @@
+---
+##### ======================================================================================================= #####
+##title          :userconditional.yml
+#description     :This ansible playbook describe create a user and remove a user
+#athor          :santhosh kondamalla
+#date            :2018063
+#usage           :ansible-playbook -i hosts userconditional.yml  --tags=create/delete --ask-sudo-pass
+#notes           :TAG-> create: it will create a user,if the user does not exits
+#notes           :TAG-> delete: it will delete a user,if the user exists
+#ansible_version :2.5+
+##### ======================================================================================================= #####
+
+- hosts: localhost
+  become: yes
+  gather_facts: no
+
+
+  vars_prompt:
+    
+    - name: "username"
+      prompt: "Enter the username"
+      private: no
+    
+    - name: "comment"
+      prompt: "Enter the Full name of a user"
+      private: no
+    
+
+  tasks:
+    - name: check whether user existing or not
+#      action: shell /usr/bin/getent passwd $username | /usr/bin/wc -l | tr -d '' 
+      action: shell grep "{{ username }}" /etc/passwd && echo 0 || echo 1      
+      register: user_exists
+      tags: create,delete
+      ignore_errors: true
+
+    - name: Creating user
+      user: 
+       name: "{{ username }}"
+       comment: "{{ comment }}"
+       password: '$6$ToE6PskaI4XJgL$IDXSQcpadpVxJJhgH.fc9BcojU/h1aKhx/Xkt2p.6.dOoi1/.lXHoOR3oeAn.Kne1OqTP6rTS0ERdO2Yl6mTL0'
+      when: "{{user_exists.stdout}} == 1"
+      tags: create
+ 
+
+    - name: deleting user
+      user:
+       name: "{{ username }}"
+       comment: "{{ comment }}"
+      when: "{{user_exists.stdout}} == 0"
+      tags: delete
