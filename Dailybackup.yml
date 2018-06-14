@@ -1,0 +1,44 @@
+---
+##### ======================================================================================================= #####
+##title          :dailybackup.yml
+#description     :This ansible playbook describe create a directory and remove a directory
+#author          :santhosh konfdamalla
+#date            :20180614
+#usage           :ansible-playbook -i hosts dailybackup.yml   --ask-sudo-pass
+#ansible_version :2.5+
+##### ======================================================================================================= #####
+
+- hosts: postgres
+  become: yes
+  gather_facts: no
+ 
+  tasks:
+  - name: compress the directory
+    archive: 
+      path: /opt/tomcat
+      dest: /opt/tomcat-{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}.tar.gz
+      format: gz
+
+- hosts: postgres
+  become: yes
+  gather_facts: no
+
+  tasks:
+  - name: Transfer file from localhost to postgres
+    copy:
+        src: /opt/tomcat
+        dest: /opt/
+        user: tomcat
+        group: tomcat
+        mode: 755
+
+- hosts: localhost
+  become: yes
+  gather_facts: no
+
+  tasks:
+  - name: delete the file before 2 days
+    find: 
+      paths: /var/tomcat/
+      age: 2d
+    register: files_to_delete
