@@ -1,0 +1,44 @@
+---
+##### ======================================================================================================= #####
+##title          :mysqldumpimport.yml
+#description     :This ansible playbook describe create a directory and remove a directory
+#author          :santhosh kondamalla
+#date            :20180615
+#usage           :ansible-playbook -i hosts mysqldumoimport.yml --ask-sudo-pass
+#ansible_version :2.5+
+##### ======================================================================================================= #####
+- hosts: localhost
+  become: yes
+  gather_facts: no
+
+  tasks:
+
+  - name: database backup
+    mysql_db:
+      name: mysql
+      state: dump
+      target: /tmp/mysql.sql
+      login_host: localhost
+      login_user: root
+      login_password: santhosh
+
+
+- hosts: santhosh
+  become: yes
+  gather_facts: no
+
+  tasks:
+
+  - name: copy the database file in remote server
+    copy:
+      src=/tmp/mysql.sql
+      dest=/tmp/
+
+  - name: import the databases
+    mysql_db:
+      name: santhosh
+      state: import
+      target: /tmp/mysql.sql
+      login_host: localhost
+      login_user: root
+      login_password: password
