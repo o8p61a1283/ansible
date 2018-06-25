@@ -1,0 +1,44 @@
+---
+- hosts: apache
+  become: yes
+  gather_facts: no
+  tasks:
+#
+#
+#  - name: vgcreate
+#    lvg:
+#          vg: test1_vg
+#          pvs: /dev/xvdc
+###          pv_options: "--setphysicalvolumesize 100M"
+# 
+#  - name: lvcreate
+#    lvol:
+#          vg: test1_vg
+#          lv: test1_lv
+#          size: +100%FREE
+#
+#  - name: create file system
+#    filesystem:
+#          fstype: ext4
+#          dev: /dev/test1_vg/test1_lv
+#
+#  - name: mount logical volume
+#    mount: 
+#          name: /disk1
+#          src:  /dev/test1_vg/test1_lv
+#          fstype: ext4
+#          state: mounted
+
+
+    - name: lvextend
+      lvol:
+        vg: vgdata
+        lv: lvdisk
+        size: +100%FREE
+        pvs: /dev/xvdb1,/dev/xvdb2,/dev/xvdb3
+
+    - name: Formating device with ext4 FS
+      filesystem:
+        fstype: ext4
+        dev: /dev/mapper/vgdata-lvdisk
+        resizefs: yes
