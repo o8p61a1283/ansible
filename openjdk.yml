@@ -1,0 +1,51 @@
+---
+##### ======================================================================================================= #####
+##title          :create_multiple_diretory.yml
+#description     :This ansible playbook describe create a directory and remove a directory
+#author          :santhosh kondamalla
+#date            :20180627
+#usage           :ansible-playbook -i hosts openjdk.yml  --ask-sudo-pass
+#ansible_version :2.5+
+##### ======================================================================================================= #####
+- hosts: postgres
+  become: yes
+  gather_facts: yes
+
+  tasks:
+  - name: Fetch Java Version
+#       shell: java -version 2>&1 | grep    version | awk '{print $3}' | sed 's/"//g'
+    shell: java -version 2>&1
+    register: java_result
+    ignore_errors: true
+
+  - debug: msg="{{item}}:{{java_result.stdout}}"
+    with_items: "{{ inventory_hostname }}"
+    when: java_result is success
+
+  - name: ensure apt cache is up to date
+    apt: update_cache=yes
+
+  - name: add repo for OpenJDK
+    apt_repository: repo='ppa:openjdk-r/ppa' state=present
+
+  - name: ensure apt cache is up to date
+    apt: update_cache=yes
+
+  - name: install openJDK7
+    apt: name=openjdk-7-jdk state=latest update-cache=yes force=yes
+    sudo: yes
+
+  - name: install openJDK8
+    apt: name=openjdk-8-jdk state=latest update-cache=yes force=yes
+    sudo: yes
+
+  - name: select the latest version of java
+    alternatives:
+      name: java
+      path: /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+
+  - name: Fetch Java Version
+#       shell: java -version 2>&1 | grep    version | awk '{print $3}' | sed 's/"//g'
+    shell: java -version 2>&1
+    register: java_out
+                                                                                                                             1,1           Top
