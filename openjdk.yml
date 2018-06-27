@@ -1,7 +1,7 @@
 ---
 ##### ======================================================================================================= #####
-##title          :create_multiple_diretory.yml
-#description     :This ansible playbook describe create a directory and remove a directory
+##title          :openjdk.yml
+#description     :This ansible playbook describe install openjdk and update latest verdsion
 #author          :santhosh kondamalla
 #date            :20180627
 #usage           :ansible-playbook -i hosts openjdk.yml  --ask-sudo-pass
