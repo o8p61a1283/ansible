@@ -1,0 +1,57 @@
+---
+##### ======================================================================================================= #####
+##title          :upgradelist.yml
+#description     :This ansible playbook upgrade package list
+#author          :santhosh kondamalla
+#date            :20180630
+#usage           :ansible-playbook -i hosts upgradelist.yml  --ask-sudo-pass
+#ansible_version :2.5+
+##### ======================================================================================================= #####
+
+- hosts: benjamin
+  become: yes
+  gather_facts: yes
+
+  tasks:
+
+  - name: get the list of update packages
+    shell: "apt list --upgradable >> /tmp/{{ansible_hostname}}-upgrade.list"
+    register: upgrade_list
+
+  - debug:
+      msg: "{{ upgrade_list.stdout_lines }}"
+
+  - name: Getting each node upgrade package list
+    fetch:
+     dest: /home/ubuntu/package-list/
+     src: "/tmp/{{ansible_hostname}}-upgrade.list"
+
+  - name: Update the cache
+    apt: update_cache=yes
+  
+  - name: install aptitude
+    apt: name=aptitude state=present
+   
+  - name: upgrade packages
+    apt: upgrade=yes
+
+  - name: Remove useless packages from the cache
+    apt: 
+      autoclean: yes
+  
+  - name: Remove dependencies that are no longer required
+    apt:
+      autoremove: yes
+   
+  - name: after upgrading packages list
+    shell: "apt list --upgradable >> /tmp/{{ansible_hostname}}-afterupgrade.list"
+    register: afterupgrade_list
+
+  - debug: 
+      msg: "{{ afterupgrade_list.stdout_lines }}"
+
+  - name: Getting each node after upgrade package list
+    fetch: 
+     dest: /home/ubuntu/afterupgrade-list/
+     src: "/tmp/{{ansible_hostname}}-afterupgrade.list"
+
