@@ -1,0 +1,42 @@
+---
+##### ======================================================================================================= #####
+##title          :mysqlinstall.yml
+#description     :This ansible playbook describe installtion of mysql
+#author          :santhosh kondamalla
+#date            :20180630
+#usage           :ansible-playbook -i hosts mysqldumoimport.yml --ask-sudo-pass
+#ansible_version :2.5+
+##### ======================================================================================================= #####
+- hosts: postgres
+  become: yes
+  gather_facts: no
+
+  vars:
+    root_db_password: Password123
+
+  tasks:
+
+  - name: Install MySQL Server
+    apt: name=mysql-server state=present
+
+  - name: Install MySQL-python, this is required for the task remove anoo
+nymous user
+    apt: name=python-mysqldb state=present
+
+  - name: Start MySQL Server and enable it
+#    service: name=mysqld state=started enabled=yes
+    command: service mysql start
+
+  - name: Remove Test database if it exist.
+    mysql_db: name=test state=absent
+
+  - name: Remove All Anonymous User Accounts
+    mysql_user: name=” host_all=yes state=absent
+
+  - name: Change root password
+    mysql_user: name=root host={{item}} password={{root_db_password}}
+    with_items:
+#    – {{ansible_hostname}}
+       – 127.0.0.1
+       – ::1
+       – localhost
