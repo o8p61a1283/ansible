@@ -1,0 +1,11 @@
+[local]
+
+localhost ansible_connection=local ansible_python_interpreter=python
+
+
+[cmd]
+#acsipl23 ansible_host=192.168.1.33 ansible_post=22 ansible_user=acsipl23
+#acsipl25 ansible_host=192.168.1.35 ansible_post=22 ansible_user=administrator
+#acsipl46 ansible_host=192.168.1.56 ansible_post=22 ansible_user=administrator
+#acsipl48 ansible_host=192.168.1.58 ansible_post=22 ansible_user=administrator
+#acsipl47 ansible_host=192.168.1.57 ansible_post=22 ansible_user=administrator
