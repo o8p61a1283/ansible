@@ -1,0 +1,99 @@
+---
+
+ - name: launching aleem-standby-02 Instance
+   hosts: local
+   gather_facts: true
+
+   vars:
+     Profile: aleem
+     Region:  ap-south-1
+     Instance_Name: aleem-node-1
+     Standby_Instance_Name:  aleem-standby-node-02
+     EIP: 13.234.26.30
+
+   tasks:
+
+   - name: Getting latest AMI ID of host "{{ Instance_Name }}"
+     ec2_ami_find:
+        name: "{{ Instance_Name }}"
+        owner: self
+        profile: "{{ Profile }}"
+        region: "{{ Region }}"
+        sort: name
+        sort_order: descending
+        sort_end: 1
+     register: ami_find
+
+   - set_fact:
+       Ami_Id: "{{ item.ami_id }}"
+     with_items: "{{ ami_find.results }}"
+
+   - name: Gatthering Information about Instance
+     ec2_instance_facts:
+       profile: "{{ Profile }}"
+       region: "{{ Region }}"
+       filters:
+          "tag:Name": "{{ Instance_Name }}"
+          instance-state-name: running
+     register: ec2_details
+
+   - name: Launching New Instance
+     ec2:
+       instance_type: "{{ ec2_details.instances[0].instance_type }}"
+       image: "{{ Ami_Id }}"
+       vpc_subnet_id: "{{ ec2_details.instances[0].subnet_id }}"
+       group_id: "{{ ec2_details.instances[0].security_groups|map(attribute='group_id') | join(',') }}"
+       region: "{{ Region }}"
+       zone: "{{ ec2_details.instances[0].placement.availability_zone }}"
+       profile: "{{ Profile }}"
+       keypair: "{{ ec2_details.instances[0].key_name }}"
+       count: 1
+       wait: true
+     register: aws_ec2
+
+   - name: Assigning EIP to Instance
+     ec2_eip:
+       device_id: "{{ item[0].id }}"
+       public_ip: "{{ item[1] }}"
+       profile: "{{ Profile }}"
+       region: "{{ Region }}"
+     with_together:
+       - "{{ aws_ec2.instances }}"
+       - "{{ EIP }}"
+
+   - name: Adding new Instance details to host file
+     add_host:
+       name: "{{ item }}"
+       groups: just_launched
+       ansible_user: "{{ ansible_user_id }}"
+       ansible_host_key_checking: False
+       ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+       ansible_port: 63022
+     with_items: "{{ EIP }}"
+
+   - name: Waiting for Instance to start
+     wait_for:
+       host: "{{ item }}"
+       port: 22
+       state: started
+     with_items: "{{ EIP }}"
+
+   - name: Adding Name Tag to instance
+     ec2_tag:
+       resource: "{{ item[0].id }}"
+       region: "{{ Region }}"
+       profile: "{{ Profile }}"
+     args:
+      tags:
+        Name: "{{ item[1] }}"
+        Snapshot: yes
+        Backup: yes
+     with_together:
+        - "{{ aws_ec2.instances }}"
+        - "{{ Standby_Instance_Name }}"
+
+   - name: Removing Host key File from Local machine
+     known_hosts:
+       name: "{{ item }}"
+       state: absent
+     with_items: "{{ EIP }}"
