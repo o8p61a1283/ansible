@@ -1,0 +1,270 @@
+---
+---
+##### ======================================================================================================= #####
+##title          :urlverify.yml
+#description     :This ansible playbook will verify the url in my project
+#author          : kondamalla santhosh
+#date            :20190904
+#usage           :ansible-playbook -i hosts urlverify.yml -e pass_word="<passwd here>
+#ansible_version :2.7+
+#boto version    :boto3
+##### ======================================================================================================= #####
+ - name: BSH URL's Verification
+   hosts: local
+   gather_facts: False
+   ignore_errors: yes
+
+   vars:
+    user_name: kondamalla.santhosh-p
+    pass_word:
+    wiki_prod: https://wiki.bsh-sdd.com
+    wiki_current: https://current-test-wiki.bsh-sdd.com
+    jira_prod: https://issuetracking.bsh-sdd.com
+    jira_current: https://current-test-issuetracking.bsh-sdd.com
+    crowd_prod: https://id.bsh-sdd.com
+    crowd_current: https://current-test-id.bsh-sdd.com
+    crowd_next: https://next-test-id.bsh-sdd.com
+    bitbucket_prod: https://scr.bsh-sdd.com
+    bamboo_prod: https://ci.bsh-sdd.com
+    artifactory_prod: https://br.bsh-sdd.com
+    sonarcube_prod: https://cq.bsh-sdd.com
+    piwik_prod: https://analytics.bsh-sdd.com
+    jira_serverdesk: https://support.bsh-sdd.com
+
+
+   tasks:
+   - name: Verifying wiki prod url
+     uri:
+       url: "{{ wiki_prod }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: wiki_prod
+     tags: [wiki_prod]
+
+   - name: Fail if Username is not in wiki_prod page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in wiki_prod.content"
+     tags: [wiki_prod]
+
+   - name: Verifying wiki_current url
+     uri:
+       url: "{{ wiki_current }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: wiki_current
+     tags: [wiki_current]
+
+   - name: Fail if Username is not in wiki_current page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in wiki_current.content"
+     tags: [wiki_current]
+
+   - name: Verifying jira_prod url
+     uri:
+       url: "{{ jira_prod }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: jira_prod
+     tags: [jira_prod]
+
+   - name: Fail if Username is not in jira_prod page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in jira_prod.content"
+     tags: [jira_prod]
+
+   - name: Verifying jira_current url
+     uri:
+       url: "{{ jira_current }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: jira_current
+     tags: [jira_current]
+
+   - name: Fail if Username is not in jira_current page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in jira_current.content"
+     tags: [jira_current]
+
+   - name: Verifying crowd_prod url
+     uri:
+       url: "{{ crowd_prod }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: crowd_prod
+     tags: [crowd_prod]
+
+   - name: Fail if Username is not in crowd_prod page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in crowd_prod.content"
+     tags: [crowd_prod]
+
+   - name: Verifying crowd_current url
+     uri:
+       url: "{{ crowd_current }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: crowd_current
+     tags: [crowd_current]
+
+   - name: Fail if Username is not in crowd_current page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in crowd_current.content"
+     tags: [crowd_current]
+
+   - name: Verifying bitbucket_prod url
+     uri:
+       url: "{{ bitbucket_prod }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: bitbucket_prod
+     tags: [bitbucket_prod]
+
+   - name: Fail if Username is not in bitbucket_prod page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in bitbucket_prod.content"
+     tags: [bitbucket_prod]
+
+   - name: Verifying bamboo_prod url
+     uri:
+       url: "{{ bamboo_prod }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: bamboo_prod
+     tags: [bamboo_prod]
+
+   - name: Fail if Username is not in bamboo_prod page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in bamboo_prod.content"
+     tags: [bamboo_prod]
+
+   - name: Verifying artifactory_prod url
+     uri:
+       url: "{{ artifactory_prod }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: artifactory_prod
+     tags: [artifactory_prod]
+
+   - name: Fail if Username is not in artifactory_prod page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in artifactory_prod.content"
+     tags: [artifactory_prod]
+
+   - name: Verifying sonarcube_prod url
+     uri:
+       url: "{{ sonarcube_prod }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: sonarcube_prod
+     tags: [sonarcube_prod]
+
+   - name: Fail if Username is not in sonarcube_prod page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in sonarcube_prod.content"
+     tags: [sonarcube_prod]
+
+   - name: Verifying piwik_prod url
+     uri:
+       url: "{{ piwik_prod }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: piwik_prod
+     tags: [piwik_prod]
+
+   - name: Fail if Username is not in piwik_prod page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in piwik_prod.content"
+     tags: [piwik_prod]
+
+   - name: Verifying jira_serverdesk url
+     uri:
+       url: "{{ jira_serverdesk }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: jira_serverdesk
+     tags: [jira_serverdesk]
+
+   - name: Fail if Username is not in jira_serverdesk page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in jira_serverdesk.content"
+     tags: [jira_serverdesk]
+
+
+   - name: Verifying crowd_next url
+     uri:
+       url: "{{ crowd_next }}"
+       method: GET
+       user: "{{ user_name }}"
+       password: "{{ pass_word }}"
+       force_basic_auth: yes
+       status_code: 200
+       return_content: yes
+     register: crowd_next
+     tags: [crowd_next]
+
+   - name: Fail if Username is not in crowd_next page content
+     fail:
+      msg: "Login Failed"
+     when: "'kondamalla.santhosh-p' not in crowd_next.content"
+     tags: [crowd_next]
+
